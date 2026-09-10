@@ -1,34 +1,688 @@
-# Gradle files
-.gradle/
-build/
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Nightfall Protocol: Executive Defense</title>
+<style>
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-# Local configuration file (sdk path, etc)
-local.properties
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #050609;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    touch-action: none;
+  }
 
-# Log/OS Files
-*.log
+  #game {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #080b10;
+  }
 
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
-*.apk
-output-metadata.json
+  #hud {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 3;
+    padding: 12px;
+    pointer-events: none;
+  }
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
 
-# Keystore files
-*.jks
-*.keystore
+  .brand {
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #f5b642;
+    font-size: clamp(12px, 3.5vw, 18px);
+  }
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+  .stats {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 
-# Android Profiling
-*.hprof
+  .pill {
+    background: rgba(8, 10, 14, .84);
+    border: 1px solid #39414b;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  #healthBar {
+    width: 100%;
+    height: 7px;
+    margin-top: 9px;
+    border: 1px solid #363d45;
+    background: #171a1d;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  #healthFill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,#d83c3c,#f3b33f);
+    transition: width .15s;
+  }
+
+  #message {
+    position: fixed;
+    z-index: 4;
+    left: 50%;
+    top: 23%;
+    transform: translateX(-50%);
+    width: 90%;
+    text-align: center;
+    color: #f5b642;
+    font-weight: 900;
+    font-size: clamp(20px, 7vw, 38px);
+    text-shadow: 0 2px 12px #000;
+    pointer-events: none;
+  }
+
+  #controls {
+    position: fixed;
+    z-index: 5;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    pointer-events: none;
+  }
+
+  .controlGroup {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  button {
+    border: 1px solid #606975;
+    color: #fff;
+    background: rgba(15, 19, 25, .9);
+    border-radius: 12px;
+    min-width: 58px;
+    min-height: 52px;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 900;
+    user-select: none;
+  }
+
+  button:active, button.active {
+    background: #b33a32;
+    transform: scale(.96);
+  }
+
+  #fire {
+    min-width: 95px;
+    min-height: 68px;
+    border-color: #f5b642;
+    background: #7b2825;
+    font-size: 16px;
+  }
+
+  #startScreen, #gameOver {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    background:
+      radial-gradient(circle at center, rgba(50,58,68,.4), rgba(3,5,8,.97) 70%);
+  }
+
+  #gameOver {
+    display: none;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    color: #f5b642;
+    font-size: clamp(30px, 10vw, 58px);
+    line-height: .95;
+    letter-spacing: 2px;
+  }
+
+  h2 {
+    color: #ddd;
+    margin: 5px 0 25px;
+    font-size: clamp(13px, 4vw, 20px);
+    font-weight: normal;
+  }
+
+  .mainButton {
+    background: #b13c31;
+    border-color: #f5b642;
+    width: min(260px, 80vw);
+    min-height: 58px;
+    font-size: 17px;
+  }
+
+  .hint {
+    max-width: 340px;
+    color: #9ba4af;
+    line-height: 1.5;
+    font-size: 13px;
+    margin: 18px 0;
+  }
+
+  .warning {
+    color: #777f8a;
+    font-size: 10px;
+    max-width: 330px;
+    margin-top: 22px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="topbar">
+    <div class="brand">NIGHTFALL PROTOCOL</div>
+    <div class="stats">
+      <div class="pill">WAVE <span id="wave">1</span></div>
+      <div class="pill">SCORE <span id="score">0</span></div>
+      <div class="pill">AMMO <span id="ammo">24</span></div>
+    </div>
+  </div>
+  <div id="healthBar"><div id="healthFill"></div></div>
+</div>
+
+<div id="message"></div>
+
+<div id="controls">
+  <div class="controlGroup">
+    <button id="left">◀<br>LANE</button>
+    <button id="right">▶<br>LANE</button>
+  </div>
+  <div class="controlGroup">
+    <button id="reload">RELOAD</button>
+    <button id="fire">HOLD<br>FIRE</button>
+  </div>
+</div>
+
+<section id="startScreen">
+  <h1>NIGHTFALL<br>PROTOCOL</h1>
+  <h2>Executive Defense</h2>
+  <p class="hint">
+    Defend the barricade across three lanes. Move between lanes and hold FIRE
+    to eliminate incoming infected.
+  </p>
+  <button class="mainButton" id="start">DEPLOY</button>
+  <p class="warning">
+    Original fictional parody game. No official characters, trademarks, or assets are used.
+  </p>
+</section>
+
+<section id="gameOver">
+  <h1>LINE BROKEN</h1>
+  <h2>Final score: <b id="finalScore">0</b></h2>
+  <button class="mainButton" id="restart">REDEPLOY</button>
+</section>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const ui = {
+    wave: document.getElementById("wave"),
+    score: document.getElementById("score"),
+    ammo: document.getElementById("ammo"),
+    health: document.getElementById("healthFill"),
+    message: document.getElementById("message"),
+    start: document.getElementById("startScreen"),
+    over: document.getElementById("gameOver"),
+    finalScore: document.getElementById("finalScore")
+  };
+
+  let W, H, DPR;
+  let running = false;
+  let last = 0;
+  let spawnTimer = 0;
+  let fireTimer = 0;
+  let waveTimer = 0;
+  let flash = 0;
+
+  const game = {
+    lane: 1,
+    health: 100,
+    ammo: 24,
+    maxAmmo: 24,
+    score: 0,
+    wave: 1,
+    kills: 0,
+    enemies: [],
+    particles: [],
+    bullets: []
+  };
+
+  function resize() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth;
+    H = innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  addEventListener("resize", resize);
+  resize();
+
+  function laneX(lane) {
+    return W * (.25 + lane * .25);
+  }
+
+  function groundY() {
+    return H * .69;
+  }
+
+  function playerY() {
+    return H * .79;
+  }
+
+  function updateUI() {
+    ui.wave.textContent = game.wave;
+    ui.score.textContent = game.score;
+    ui.ammo.textContent = game.ammo;
+    ui.health.style.width = Math.max(0, game.health) + "%";
+  }
+
+  function announce(text, time = 1100) {
+    ui.message.textContent = text;
+    setTimeout(() => {
+      if (ui.message.textContent === text) ui.message.textContent = "";
+    }, time);
+  }
+
+  function startGame() {
+    game.lane = 1;
+    game.health = 100;
+    game.ammo = game.maxAmmo;
+    game.score = 0;
+    game.wave = 1;
+    game.kills = 0;
+    game.enemies = [];
+    game.particles = [];
+    game.bullets = [];
+    spawnTimer = 0;
+    waveTimer = 0;
+    running = true;
+    ui.start.style.display = "none";
+    ui.over.style.display = "none";
+    announce("HOLD THE LINE");
+    updateUI();
+    last = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    running = false;
+    ui.finalScore.textContent = game.score;
+    ui.over.style.display = "flex";
+  }
+
+  function move(dir) {
+    if (!running) return;
+    game.lane = Math.max(0, Math.min(2, game.lane + dir));
+  }
+
+  function reload() {
+    if (!running || game.ammo === game.maxAmmo) return;
+    game.ammo = game.maxAmmo;
+    announce("MAGAZINE READY", 500);
+    updateUI();
+  }
+
+  function spawnEnemy() {
+    const lane = Math.floor(Math.random() * 3);
+    const boss = game.wave >= 4 && Math.random() < .08;
+    game.enemies.push({
+      lane,
+      y: -40,
+      hp: boss ? 5 + game.wave : 1,
+      maxHp: boss ? 5 + game.wave : 1,
+      speed: (boss ? 10 : 18 + game.wave * 1.7) * (.85 + Math.random() * .3),
+      size: boss ? 34 : 22,
+      boss
+    });
+  }
+
+  function shoot() {
+    if (!running || game.ammo <= 0) {
+      if (game.ammo <= 0) announce("RELOAD", 300);
+      return;
+    }
+
+    game.ammo--;
+    flash = 1;
+
+    game.bullets.push({
+      lane: game.lane,
+      y: playerY() - 25,
+      speed: 650
+    });
+
+    updateUI();
+  }
+
+  function damageEnemy(enemy) {
+    enemy.hp--;
+    for (let i = 0; i < 5; i++) {
+      game.particles.push({
+        x: laneX(enemy.lane),
+        y: enemy.y,
+        vx: (Math.random() - .5) * 100,
+        vy: (Math.random() - .5) * 100,
+        life: .35,
+        color: "#e24b39"
+      });
+    }
+
+    if (enemy.hp <= 0) {
+      game.score += enemy.boss ? 500 : 100;
+      game.kills++;
+      game.enemies.splice(game.enemies.indexOf(enemy), 1);
+
+      if (game.kills % 10 === 0) {
+        game.wave++;
+        announce("WAVE " + game.wave, 900);
+      }
+      updateUI();
+    }
+  }
+
+  function update(dt) {
+    spawnTimer -= dt;
+    waveTimer += dt;
+    fireTimer -= dt;
+    flash -= dt * 5;
+
+    const interval = Math.max(.35, 1.15 - game.wave * .055);
+
+    if (spawnTimer <= 0) {
+      spawnEnemy();
+      spawnTimer = interval;
+    }
+
+    if (waveTimer > 20) {
+      waveTimer = 0;
+      game.wave++;
+      announce("INCOMING WAVE " + game.wave, 1000);
+    }
+
+    for (const e of [...game.enemies]) {
+      e.y += e.speed * dt;
+
+      if (e.y > groundY()) {
+        game.health -= e.boss ? 18 : 8;
+        game.enemies.splice(game.enemies.indexOf(e), 1);
+        announce("BARRICADE HIT", 400);
+        updateUI();
+
+        if (game.health <= 0) {
+          game.health = 0;
+          updateUI();
+          endGame();
+          return;
+        }
+      }
+    }
+
+    for (const b of [...game.bullets]) {
+      b.y -= b.speed * dt;
+
+      for (const e of [...game.enemies]) {
+        if (e.lane === b.lane && Math.abs(e.y - b.y) < e.size + 14) {
+          damageEnemy(e);
+          game.bullets.splice(game.bullets.indexOf(b), 1);
+          break;
+        }
+      }
+
+      if (b.y < -30) game.bullets.splice(game.bullets.indexOf(b), 1);
+    }
+
+    for (const p of [...game.particles]) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      if (p.life <= 0) game.particles.splice(game.particles.indexOf(p), 1);
+    }
+  }
+
+  function drawBackground() {
+    const gradient = ctx.createLinearGradient(0, 0, 0, H);
+    gradient.addColorStop(0, "#070a10");
+    gradient.addColorStop(.65, "#111923");
+    gradient.addColorStop(1, "#242b31");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "rgba(255,255,255,.025)";
+    for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
+
+    ctx.fillStyle = "#171c20";
+    ctx.fillRect(0, groundY(), W, H - groundY());
+
+    ctx.strokeStyle = "rgba(210,170,90,.22)";
+    ctx.lineWidth = 2;
+
+    for (let i = 0; i < 3; i++) {
+      const x = laneX(i);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, groundY() + 40);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#896b35";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY() + 20);
+    ctx.lineTo(W, groundY() + 20);
+    ctx.stroke();
+
+    ctx.fillStyle = "#15191c";
+    for (let x = -20; x < W; x += 43) {
+      ctx.fillRect(x, groundY() + 5, 22, 28);
+    }
+  }
+
+  function drawPlayer() {
+    const x = laneX(game.lane);
+    const y = playerY();
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = "rgba(0,0,0,.45)";
+    ctx.beginPath();
+    ctx.ellipse(0, 26, 35, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#283544";
+    ctx.fillRect(-22, -5, 44, 38);
+
+    ctx.fillStyle = "#c89066";
+    ctx.beginPath();
+    ctx.arc(0, -23, 17, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#e5a72c";
+    ctx.beginPath();
+    ctx.arc(0, -29, 21, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#111";
+    ctx.fillRect(-9, -24, 5, 4);
+    ctx.fillRect(5, -24, 5, 4);
+
+    ctx.fillStyle = "#1b2027";
+    ctx.fillRect(12, -2, 34, 8);
+
+    ctx.strokeStyle = "#d2dae1";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(15, 2);
+    ctx.lineTo(48, 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawEnemy(e) {
+    const x = laneX(e.lane);
+    const y = e.y;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = e.boss ? "#633a69" : "#315548";
+    ctx.beginPath();
+    ctx.arc(0, 0, e.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#17231f";
+    ctx.fillRect(-e.size * .7, e.size * .55, e.size * 1.4, e.size * .9);
+
+    ctx.fillStyle = "#f0c341";
+    ctx.fillRect(-e.size * .45, -5, 6, 6);
+    ctx.fillRect(e.size * .2, -5, 6, 6);
+
+    if (e.boss) {
+      ctx.strokeStyle = "#dd5a42";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-e.size - 5, -e.size - 5, e.size * 2 + 10, e.size * 2 + 10);
+    }
+
+    ctx.restore();
+
+    if (e.boss || e.maxHp > 1) {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(x - 25, y - e.size - 12, 50, 5);
+      ctx.fillStyle = "#e54b39";
+      ctx.fillRect(x - 25, y - e.size - 12, 50 * e.hp / e.maxHp, 5);
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+
+    for (const b of game.bullets) {
+      ctx.fillStyle = "#f5d56c";
+      ctx.fillRect(laneX(b.lane) - 2, b.y, 4, 18);
+    }
+
+    for (const e of game.enemies) drawEnemy(e);
+    drawPlayer();
+
+    for (const p of game.particles) {
+      ctx.globalAlpha = Math.max(0, p.life / .35);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, 4, 4);
+      ctx.globalAlpha = 1;
+    }
+
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,220,120,${Math.min(.28, flash)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min(.035, (now - last) / 1000);
+    last = now;
+
+    update(dt);
+    draw();
+
+    if (running) requestAnimationFrame(loop);
+  }
+
+  let firing = false;
+
+  function fireStart(e) {
+    e.preventDefault();
+    firing = true;
+    document.getElementById("fire").classList.add("active");
+    shoot();
+  }
+
+  function fireEnd(e) {
+    e.preventDefault();
+    firing = false;
+    document.getElementById("fire").classList.remove("active");
+  }
+
+  setInterval(() => {
+    if (running && firing && fireTimer <= 0) {
+      shoot();
+      fireTimer = .14;
+    }
+  }, 30);
+
+  document.getElementById("left").addEventListener("pointerdown", () => move(-1));
+  document.getElementById("right").addEventListener("pointerdown", () => move(1));
+  document.getElementById("reload").addEventListener("pointerdown", reload);
+
+  const fireButton = document.getElementById("fire");
+  fireButton.addEventListener("pointerdown", fireStart);
+  fireButton.addEventListener("pointerup", fireEnd);
+  fireButton.addEventListener("pointercancel", fireEnd);
+  fireButton.addEventListener("pointerleave", fireEnd);
+
+  document.getElementById("start").addEventListener("click", startGame);
+  document.getElementById("restart").addEventListener("click", startGame);
+
+  addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") move(-1);
+    if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") move(1);
+    if (e.key === "r") reload();
+    if (e.key === " " || e.key.toLowerCase() === "f") firing = true;
+  });
+
+  addEventListener("keyup", e => {
+    if (e.key === " " || e.key.toLowerCase() === "f") firing = false;
+  });
+
+  draw();
+})();
+</script>
+</body>
+</html>
